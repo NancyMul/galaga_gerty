@@ -71,7 +71,7 @@ impl KeyReader {
 
 
 pub async fn run_game() {
-    let mut player_postition = Cords {x: 10, y: 8};
+    let mut player_position = Cords(10, 8);
 
     // Create a mutable variable called player_position
     // player_position should be a cords struct  // Cords(10, 8)
@@ -88,14 +88,14 @@ pub async fn run_game() {
         for row in 0..ROWS {
             print!("           |");
             for col in 0..COLUMNS {
-            let current_postition = Cords {x: col, y:row};
+            let current_position = Cords(col, row);
                 // Create a variable called current_position
                 // Set current_position to be a Cord struct where
                 // the x is col
                 // the y is row
 
                 // Change this statememnt to compare player_position to current_position
-                if player_postition == current_position {
+                if player_position == current_position {
                     print!("^");
                 } else {
                     print!(" ");
@@ -125,24 +125,23 @@ pub async fn run_game() {
 pub async fn on_press(mut player_position: Cords)-> Cords {
     match KeyReader::await_key_press().await {
         Key::ArrowLeft => {
-            player_position.x -= 1
+            player_position.0 -= 1;
             // We want to adjust the player_position to the left by one
             // Add code here to subtract 1 from the x value
         }
         Key::ArrowRight => {
-            player_postition.x += 1
+            player_position.0 += 1;
             // We want to adjust the player_position to the right by one
             // Add code here to add 1 to the x value
         }
         Key::ArrowUp => {
             // Make player shoot
             // Don't do anything here
-            player_position
         }
         Key::CtrlC => exit(0),
-        _ => {player_position}
+        _ => {}
     }
-
+    player_position
     // Return the player_position variable
 }
 
@@ -170,7 +169,6 @@ pub enum AIAction {
 }
 
 pub struct ShipAI {
-    pub timer: Timer,
     // pub timer: Timer,
     pub actions: Vec<(Option<Condition>, AIAction)>,
     pub action_index: usize,
@@ -193,7 +191,6 @@ pub struct Player {
     pub lives: u8,
     pub current_position: Option<Cords>,
     pub start_position: Cords,
-    pub death_timer: Timer,
     // pub death_timer: Timer, 
     pub key_reader: KeyReader,
 }
