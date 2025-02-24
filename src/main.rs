@@ -12,33 +12,68 @@ use console::Term;
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
 pub struct Cords(pub usize, pub usize);
 
-// We will be using this Cords struct to define where objects are
-// The first usize will be the x
-// The second usize will be the y
-
-// x meaning top to bottom
-// y meaning left to right
-
-// Cords(0, 0) is the top left corner
-// Cords(20, 10) is the bottom right corner
-
 #[derive(Clone, Debug)]
 pub struct RelCords(pub i32, pub i32);
 
 pub const ROWS: usize = 10;
 pub const COLUMNS: usize = 20;
 
+/*
+    The next step is to add enemy ships, or flies. (represented by the character F)
+
+    To do this, we need a better way to keep track of which 
+    characters are on which squares of our game board
+*/
+
+// Here we have a GameState struct. One of the fields is game_board
+// game_board is a "hashmap" of characters on our board and their respective coordinates
 pub struct GameState {
-    pub game_board: HashMap<Cords, Ship>,
-    pub tick_count: u32,
-    pub player: Player,
-    pub gamelevel: GameLevel,
+    pub game_board: HashMap<Cords, Char>
 }
 
+// Create an impl block for GameState
+
+
+/* FOLLOW THESE INSTRUCTIONS INSIDE THE GameState impl BLOCK */
+
+// Create function called new()
+// new() needs to return an instance of GameState where game_board is HashMap::new()
+
+// Create a function called add_ship()
+// add_ship() needs three parameters. 
+    // #1 &self
+    // #2 The coords of the new ship (Cords)
+    // #3 The representing character (Char)
+
+// This function will return nothing
+
+// Inside this function we will add a key and value pair to our game_board hashmap
+
+// Add this line: self.game_board.insert(cords, ship);
+
+// self means get whichever instance of GameState we are calling add_ship() on
+// .game_board means get the game_board field
+// .insert(cords, ship) means add a key (cords) and value (ship) to the game_board hashmap
+    // "cords" here is the #2 parameter
+    // "ship" here is the #3 parameter
+
+// End of impl block here
+
+// After you finish all comments (there are more below)
+// GameState impl should have these 4 functions
+    // new()
+    // add_ship()
+    // display_board()
+    // run_game()
 
 #[tokio::main]
 pub async fn main() {
     execute!(std::io::stdout(), terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0, 0));
+
+    // Create a variable called game and set it to GameState::new()
+
+    // now run game.add_ship() with a set of coordinates to place this enemy somewhere on the board and the character "F"
+    
     run_game().await;
 }
 
@@ -69,14 +104,13 @@ impl KeyReader {
     }
 }
 
-
+// move this function into the GameBoard impl block
 pub async fn run_game() {
     let mut player_position = Cords(10, 8);
 
-    // Create a mutable variable called player_position
-    // player_position should be a cords struct  // Cords(10, 8)
-
     loop {
+         // Move the code inside this loop into a function called display_board() inside the GameBoard impl block
+         // Leave the loop here, and inside it call display_board()
         execute!(std::io::stdout(), crossterm::cursor::MoveTo(0, 0));
 
         print!("           +");
@@ -89,14 +123,10 @@ pub async fn run_game() {
             print!("           |");
             for col in 0..COLUMNS {
             let current_position = Cords(col, row);
-                // Create a variable called current_position
-                // Set current_position to be a Cord struct where
-                // the x is col
-                // the y is row
-
-                // Change this statememnt to compare player_position to current_position
                 if player_position == current_position {
                     print!("^");
+                } else if /* check if there is a ship at current_position */ {
+                    // print the character F
                 } else {
                     print!(" ");
                 }
@@ -110,39 +140,24 @@ pub async fn run_game() {
         }
         println!("+           ");
     
-
-        // Calling your on_press function here:
-        // Follow the instructions below then, come back here and:
-        // 1: Pass player_position as the parameter
-        // 2: Set player_position to be the returned value of calling on_press()
         player_position = on_press(player_position).await;
     }
 }
 
-// I moved your code for checking key presses here -->
-// Make this function's return type: Cords
-// Make this function take in mut player_position as a parameter
 pub async fn on_press(mut player_position: Cords)-> Cords {
     match KeyReader::await_key_press().await {
         Key::ArrowLeft => {
             player_position.0 -= 1;
-            // We want to adjust the player_position to the left by one
-            // Add code here to subtract 1 from the x value
         }
         Key::ArrowRight => {
             player_position.0 += 1;
-            // We want to adjust the player_position to the right by one
-            // Add code here to add 1 to the x value
         }
         Key::ArrowUp => {
-            // Make player shoot
-            // Don't do anything here
         }
         Key::CtrlC => exit(0),
         _ => {}
     }
     player_position
-    // Return the player_position variable
 }
 
 #[derive(Clone, Debug)]
