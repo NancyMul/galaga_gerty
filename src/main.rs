@@ -10,121 +10,113 @@ use console::Key;
 use console::Term;
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
-pub struct Cords(pub usize, pub usize);
+pub struct Coords(pub usize, pub usize);
 
 #[derive(Clone, Debug)]
-pub struct RelCords(pub i32, pub i32);
+pub struct RelCoords(pub i32, pub i32);
 
 pub const ROWS: usize = 10;
 pub const COLUMNS: usize = 20;
 
-/*
-    The next step is to add enemy ships, or flies. (represented by the character F)
-
-    To do this, we need a better way to keep track of which 
-    characters are on which squares of our game board
-*/
-
-// Here we have a GameState struct. One of the fields is game_board
-// game_board is a "hashmap" of characters on our board and their respective coordinates
 pub struct GameState {
-    pub game_board: HashMap<Cords, Char>
+    pub game_board: HashMap<Coords, Char> // 'Char' should be lowercase 'char'
 }
 
+// ACHTUNG!
+// I changed Cords to the correct spelling Coords
+// John is primitive rock child
+
+// To run your program
+    // cargo run
+
+// When you finish tasks and your code compiles with no errors
+    // git add .
+    // git commit -m "nancy is the best"
+    // git push
+
 impl GameState{
-    pub fn new()->GameState(){
-        GameState{game_board: HashMap::new()}
+    pub fn new() -> GameState() { // We are not calling a function, remove the parentheses after GameState
+        GameState{
+            game_board: HashMap::new()
+        }
     }
-    pub fn add_ship(&self, cords: Cords, ship: Char){
-        self.game_board.insert(cords, ship);  
+    pub fn add_ship(&self, coords: Coords, ship: Char) { // 'Char' should be lowercase 'char'
+        self.game_board.insert(coords, ship);  
     }
-    pub fn display_board(){
+    pub fn display_board() { // Requires the &self parameter
         execute!(std::io::stdout(), crossterm::cursor::MoveTo(0, 0));
-    
-            print!("           +");
-            for _ in 0..COLUMNS {
-                print!("-");
-            }
-            println!("+           ");
-    
-            for row in 0..ROWS {
-                print!("           |");
-                for col in 0..COLUMNS {
-                let current_position = Cords(col, row);
-                    if player_position == current_position {
-                        print!("^");
-                    } else if /* check if there is a ship at current_position */ {
-                        // print the character F
-                    } else {
-                        print!(" ");
-                    }
+
+        print!("           +");
+        for _ in 0..COLUMNS {
+            print!("-");
+        }
+        println!("+           ");
+
+        for row in 0..ROWS {
+            print!("           |");
+            for col in 0..COLUMNS {
+            let current_position = Coords(col, row);
+                if player_position == current_position {
+                    print!("^");
+                } else if let Some(ship) = self.game_board.get(&current_position) {
+                    // Explaining the conditional here:
+                        // Task 7.3 explains the .get() function, but here's a summary
+                        // Our HashMap currently contains a single (key, value) pair.
+                        // The key is coordinates Coords(8, 4), the value is the character "F" 
+                        // We want to know should the current square being printed be an "F"
+                        // We can do this by checking if anything on the game_board shares coordinates with current_position
+
+                        // let Some(ship) - The variable ship will hold the character F if .get returns a Some value
+                        // = self.game_board - Gets our game_board
+                        // .get(&current_position) // Check if there anything should be at this position
+                            // .get() will return Some("F") if there is a fly, and None if there is nothing
+
+                    // Task 
+                        // Print the ship variable
+                } else {
+                    print!(" ");
                 }
-                println!("|           ");
             }
+            println!("|           ");
+        }
+
+        print!("           +");
+        for _ in 0..COLUMNS {
+            print!("-");
+        }
+        println!("+           ");
     
-            print!("           +");
-            for _ in 0..COLUMNS {
-                print!("-");
-            }
-            println!("+           ");
-        
-            player_position = on_press(player_position).await;
+        player_position = on_press(player_position).await;
     }
-    pub async fn run_game() {
-        let mut player_position = Cords(10, 8);
+
+    pub async fn run_game() { // Requires the &self parameter
+        let mut player_position: Coords = Coords(10, 8); 
+            // Since display_board requires this player_position variable:
+            // Add a field to GameState called player_position with the type Coords
+            // In the GameState new() function, set player_position to Coords(10, 8); 
+            // Delete the variable above
+
+            // Look through the display_board function and anywhere
+            // that we use player_position, change it to self.player_position
     
         loop {
+            // This is a function that must be called on an instance of GameState (requires &self)  
+            // Change to self.display_board();
             display_board();
-             
-            
         }
     }
 }
-// Create an impl block for GameState
-
-
-/* FOLLOW THESE INSTRUCTIONS INSIDE THE GameState impl BLOCK */
-
-// Create function called new()
-// new() needs to return an instance of GameState where game_board is HashMap::new()
-
-// Create a function called add_ship()
-// add_ship() needs three parameters. 
-    // #1 &self
-    // #2 The coords of the new ship (Cords)
-    // #3 The representing character (Char)
-
-// This function will return nothing
-
-// Inside this function we will add a key and value pair to our game_board hashmap
-
-// Add this line: self.game_board.insert(cords, ship);
-
-// self means get whichever instance of GameState we are calling add_ship() on
-// .game_board means get the game_board field
-// .insert(cords, ship) means add a key (cords) and value (ship) to the game_board hashmap
-    // "cords" here is the #2 parameter
-    // "ship" here is the #3 parameter
-
-// End of impl block here
-
-// After you finish all comments (there are more below)
-// GameState impl should have these 4 functions
-    // new()
-    // add_ship()
-    // display_board()
-    // run_game()
 
 #[tokio::main]
 pub async fn main() {
     execute!(std::io::stdout(), terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0, 0));
-    let game = GameState::new()
-    game.add_ship(Cords(8, 4), "F");
-    // Create a variable called game and set it to GameState::new()
 
-    // now run game.add_ship() with a set of coordinates to place this enemy somewhere on the board and the character "F"
-    
-    run_game().await;
+    let game = GameState::new();
+    game.add_ship(Coords(8, 4), "F");
+
+    // This is a function that must be called on an instance of GameState (requires &self)  
+    // Change to game.run_game().await;
+    game.run_game().await;
 }
 
 pub struct KeyReader {
@@ -156,7 +148,7 @@ impl KeyReader {
 
 
 
-pub async fn on_press(mut player_position: Cords)-> Cords {
+pub async fn on_press(mut player_position: Coords)-> Coords {
     match KeyReader::await_key_press().await {
         Key::ArrowLeft => {
             player_position.0 -= 1;
@@ -189,10 +181,10 @@ pub enum AIAction {
     Nothing,
     Remove,
     Shoot,
-    Move(Cords),
-    MoveOrNothing(RelCords),
+    Move(Coords),
+    MoveOrNothing(RelCoords),
     ShootOrNothing,
-    RelativeMove(RelCords),
+    RelativeMove(RelCoords),
 }
 
 pub struct ShipAI {
@@ -202,9 +194,9 @@ pub struct ShipAI {
 }
 
 pub enum Condition {
-    ShipExists(Cords),
-    PositionAvailable(RelCords),
-    DontShootIfShipsAreBelow(RelCords),
+    ShipExists(Coords),
+    PositionAvailable(RelCoords),
+    DontShootIfShipsAreBelow(RelCoords),
 }
 
 pub enum Ship {
@@ -216,8 +208,8 @@ pub enum Ship {
 pub struct Player {
     pub display_char: char,
     pub lives: u8,
-    pub current_position: Option<Cords>,
-    pub start_position: Cords,
+    pub current_position: Option<Coords>,
+    pub start_position: Coords,
     // pub death_timer: Timer, 
     pub key_reader: KeyReader,
 }
