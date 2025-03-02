@@ -19,7 +19,8 @@ pub const ROWS: usize = 10;
 pub const COLUMNS: usize = 20;
 
 pub struct GameState {
-    pub game_board: HashMap<Coords, Char> // 'Char' should be lowercase 'char'
+    pub game_board: HashMap<Coords, char>, // 'Char' should be lowercase 'char'
+    pub player_position: Coords
 }
 
 // ACHTUNG!
@@ -35,15 +36,16 @@ pub struct GameState {
     // git push
 
 impl GameState{
-    pub fn new() -> GameState() { // We are not calling a function, remove the parentheses after GameState
+    pub fn new() -> GameState{ // We are not calling a function, remove the parentheses after GameState
         GameState{
-            game_board: HashMap::new()
+            game_board: HashMap::new(),
+            player_position: Coords(10, 8),
         }
     }
-    pub fn add_ship(&self, coords: Coords, ship: Char) { // 'Char' should be lowercase 'char'
+    pub fn add_ship(&mut self, coords: Coords, ship: char) { // 'Char' should be lowercase 'char'
         self.game_board.insert(coords, ship);  
     }
-    pub fn display_board() { // Requires the &self parameter
+    pub async fn display_board(&mut self){ // Requires the &self parameter
         execute!(std::io::stdout(), crossterm::cursor::MoveTo(0, 0));
 
         print!("           +");
@@ -56,23 +58,24 @@ impl GameState{
             print!("           |");
             for col in 0..COLUMNS {
             let current_position = Coords(col, row);
-                if player_position == current_position {
+                if self.player_position == current_position {
                     print!("^");
                 } else if let Some(ship) = self.game_board.get(&current_position) {
+                    print!("{}", ship);
                     // Explaining the conditional here:
                         // Task 7.3 explains the .get() function, but here's a summary
                         // Our HashMap currently contains a single (key, value) pair.
                         // The key is coordinates Coords(8, 4), the value is the character "F" 
-                        // We want to know should the current square being printed be an "F"
+                        // We want to know if the current square being printed should be an "F"
                         // We can do this by checking if anything on the game_board shares coordinates with current_position
-
                         // let Some(ship) - The variable ship will hold the character F if .get returns a Some value
                         // = self.game_board - Gets our game_board
-                        // .get(&current_position) // Check if there anything should be at this position
+                        // .get(&current_position) // Check if there is anything that should be at this position
                             // .get() will return Some("F") if there is a fly, and None if there is nothing
 
                     // Task 
                         // Print the ship variable
+
                 } else {
                     print!(" ");
                 }
@@ -86,11 +89,10 @@ impl GameState{
         }
         println!("+           ");
     
-        player_position = on_press(player_position).await;
+        self.player_position = on_press(self.player_position).await;
     }
 
-    pub async fn run_game() { // Requires the &self parameter
-        let mut player_position: Coords = Coords(10, 8); 
+    pub async fn run_game(&mut self) { // Requires the &self parameter
             // Since display_board requires this player_position variable:
             // Add a field to GameState called player_position with the type Coords
             // In the GameState new() function, set player_position to Coords(10, 8); 
@@ -102,7 +104,7 @@ impl GameState{
         loop {
             // This is a function that must be called on an instance of GameState (requires &self)  
             // Change to self.display_board();
-            display_board();
+            self.display_board();
         }
     }
 }
@@ -111,8 +113,8 @@ impl GameState{
 pub async fn main() {
     execute!(std::io::stdout(), terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0, 0));
 
-    let game = GameState::new();
-    game.add_ship(Coords(8, 4), "F");
+    let mut game = GameState::new();
+    game.add_ship(Coords(8, 4), 'F');
 
     // This is a function that must be called on an instance of GameState (requires &self)  
     // Change to game.run_game().await;
