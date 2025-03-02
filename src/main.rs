@@ -31,6 +31,55 @@ pub struct GameState {
     pub game_board: HashMap<Cords, Char>
 }
 
+impl GameState{
+    pub fn new()->GameState(){
+        GameState{game_board: HashMap::new()}
+    }
+    pub fn add_ship(&self, cords: Cords, ship: Char){
+        self.game_board.insert(cords, ship);  
+    }
+    pub fn display_board(){
+        execute!(std::io::stdout(), crossterm::cursor::MoveTo(0, 0));
+    
+            print!("           +");
+            for _ in 0..COLUMNS {
+                print!("-");
+            }
+            println!("+           ");
+    
+            for row in 0..ROWS {
+                print!("           |");
+                for col in 0..COLUMNS {
+                let current_position = Cords(col, row);
+                    if player_position == current_position {
+                        print!("^");
+                    } else if /* check if there is a ship at current_position */ {
+                        // print the character F
+                    } else {
+                        print!(" ");
+                    }
+                }
+                println!("|           ");
+            }
+    
+            print!("           +");
+            for _ in 0..COLUMNS {
+                print!("-");
+            }
+            println!("+           ");
+        
+            player_position = on_press(player_position).await;
+    }
+    pub async fn run_game() {
+        let mut player_position = Cords(10, 8);
+    
+        loop {
+            display_board();
+             
+            
+        }
+    }
+}
 // Create an impl block for GameState
 
 
@@ -69,7 +118,8 @@ pub struct GameState {
 #[tokio::main]
 pub async fn main() {
     execute!(std::io::stdout(), terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0, 0));
-
+    let game = GameState::new()
+    game.add_ship(Cords(8, 4), "F");
     // Create a variable called game and set it to GameState::new()
 
     // now run game.add_ship() with a set of coordinates to place this enemy somewhere on the board and the character "F"
@@ -104,45 +154,7 @@ impl KeyReader {
     }
 }
 
-// move this function into the GameBoard impl block
-pub async fn run_game() {
-    let mut player_position = Cords(10, 8);
 
-    loop {
-         // Move the code inside this loop into a function called display_board() inside the GameBoard impl block
-         // Leave the loop here, and inside it call display_board()
-        execute!(std::io::stdout(), crossterm::cursor::MoveTo(0, 0));
-
-        print!("           +");
-        for _ in 0..COLUMNS {
-            print!("-");
-        }
-        println!("+           ");
-
-        for row in 0..ROWS {
-            print!("           |");
-            for col in 0..COLUMNS {
-            let current_position = Cords(col, row);
-                if player_position == current_position {
-                    print!("^");
-                } else if /* check if there is a ship at current_position */ {
-                    // print the character F
-                } else {
-                    print!(" ");
-                }
-            }
-            println!("|           ");
-        }
-
-        print!("           +");
-        for _ in 0..COLUMNS {
-            print!("-");
-        }
-        println!("+           ");
-    
-        player_position = on_press(player_position).await;
-    }
-}
 
 pub async fn on_press(mut player_position: Cords)-> Cords {
     match KeyReader::await_key_press().await {
