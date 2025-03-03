@@ -42,10 +42,12 @@ impl GameState{
             player_position: Coords(10, 8),
         }
     }
+
     pub fn add_ship(&mut self, coords: Coords, ship: char) { // 'Char' should be lowercase 'char'
         self.game_board.insert(coords, ship);  
     }
-    pub async fn display_board(&mut self){ // Requires the &self parameter
+
+    pub fn display_board(&mut self){ 
         execute!(std::io::stdout(), crossterm::cursor::MoveTo(0, 0));
 
         print!("           +");
@@ -62,20 +64,6 @@ impl GameState{
                     print!("^");
                 } else if let Some(ship) = self.game_board.get(&current_position) {
                     print!("{}", ship);
-                    // Explaining the conditional here:
-                        // Task 7.3 explains the .get() function, but here's a summary
-                        // Our HashMap currently contains a single (key, value) pair.
-                        // The key is coordinates Coords(8, 4), the value is the character "F" 
-                        // We want to know if the current square being printed should be an "F"
-                        // We can do this by checking if anything on the game_board shares coordinates with current_position
-                        // let Some(ship) - The variable ship will hold the character F if .get returns a Some value
-                        // = self.game_board - Gets our game_board
-                        // .get(&current_position) // Check if there is anything that should be at this position
-                            // .get() will return Some("F") if there is a fly, and None if there is nothing
-
-                    // Task 
-                        // Print the ship variable
-
                 } else {
                     print!(" ");
                 }
@@ -88,23 +76,13 @@ impl GameState{
             print!("-");
         }
         println!("+           ");
-    
-        self.player_position = on_press(self.player_position).await;
     }
 
-    pub async fn run_game(&mut self) { // Requires the &self parameter
-            // Since display_board requires this player_position variable:
-            // Add a field to GameState called player_position with the type Coords
-            // In the GameState new() function, set player_position to Coords(10, 8); 
-            // Delete the variable above
-
-            // Look through the display_board function and anywhere
-            // that we use player_position, change it to self.player_position
+    pub async fn run_game(&mut self) { 
     
         loop {
-            // This is a function that must be called on an instance of GameState (requires &self)  
-            // Change to self.display_board();
             self.display_board();
+            self.player_position = on_press(self.player_position).await;
         }
     }
 }
@@ -116,8 +94,6 @@ pub async fn main() {
     let mut game = GameState::new();
     game.add_ship(Coords(8, 4), 'F');
 
-    // This is a function that must be called on an instance of GameState (requires &self)  
-    // Change to game.run_game().await;
     game.run_game().await;
 }
 
