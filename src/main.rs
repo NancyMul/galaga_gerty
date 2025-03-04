@@ -171,6 +171,31 @@ pub async fn on_press(mut player_position: Coords) -> Coords { // change to Opti
     player_position
 }
 
+// Created this new Timer struct, i'll explain it later
+pub struct Timer {
+    current_time: u64,
+    interval: u64,
+}
+
+impl Timer {
+    pub fn new(interval: u64) -> Self {
+        Timer {
+            current_time: 0,
+            interval,
+        }
+    }
+
+    pub fn tick(&mut self) -> bool {
+        self.current_time += 1;
+        if self.current_time >= self.interval {
+            self.current_time = 0; 
+            true
+        } else {
+            false
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Level {
     Easy,
