@@ -20,7 +20,7 @@ pub const COLUMNS: usize = 20;
 
 pub struct GameState {
     pub game_board: HashMap<Coords, char>,
-    pub player_position: Coords
+    pub player: Player
 }
 
 // To run your program
@@ -35,7 +35,7 @@ impl GameState{
     pub fn new() -> GameState { 
         GameState{
             game_board: HashMap::new(),
-            player_position: Coords(10, 8),
+            player: Player::new()
         }
     }
 
@@ -56,7 +56,7 @@ impl GameState{
             print!("           |");
             for col in 0..COLUMNS {
                 let current_position = Coords(col, row);
-                if self.player_position == current_position {
+                if self.player.current_position == current_position {
                     print!("^");
                 } else if let Some(ship) = self.game_board.get(&current_position) {
                     print!("{}", ship);
@@ -77,7 +77,10 @@ impl GameState{
     pub async fn run_game(&mut self) { 
         loop {
             self.display_board();
-            self.player_position = on_press(self.player_position).await; // delete this line, we will rewrite it differently below
+            if let Some(bullet_position) = self.player.use_key().await {
+                self.add_ship(bullet_position, '|');
+            }
+            
 
             // use an if let statement to check if self.player.use_key().await returned Some
             // if so, run self.add_ship()
@@ -126,11 +129,50 @@ impl KeyReader {
 
 pub struct Player {
     pub display_char: char,
-    pub current_position: Option<Coords>,
-    // pub death_timer: Timer, 
+    pub current_position: Coords,
+    pub death_timer: Timer, 
     pub key_reader: KeyReader,
 }
 
+impl Player{
+    pub fn new()-> Self{
+        Self {
+            display_char: '^',
+            current_position: Coords(COLUMNS / 2, ROWS - 2),
+            death_timer: Timer::new(200),
+            key_reader: KeyReader::new(),
+        }
+    }
+    pub async fn use_key(&mut self)-> Option<Coords>{ // change to Option<Coords>
+        match KeyReader::await_key_press().await {
+            Key::ArrowLeft => {
+                self.current_position.0 -= 1; // change to self.current_position.0
+            }
+            Key::ArrowRight => {
+                self.current_position.0 += 1; // change to self.current_position.0
+            }
+            Key::ArrowUp => {
+                return Some(self.current_position)
+
+                // ArrowUp is the key that makes the player shoot
+                // This function now returns an Option<Coords>
+                // Meaning if we return Some(Coords(x, y)) then the player shot a bullet from that position
+                // If we return None, the player did not shoot
+                // Here, the player shot, so let's return the player's current position
+                // Return Some(Coords(self.current_position.0)
+            }
+            Key::CtrlC => exit(0),
+            _ => {}
+        }
+        // When we change self.current_position.0 we directly change the position of the player
+        // We do not need to return the player_position anymore
+        // Instead we will return a set of coordinates, only when the player shoots
+        // That return will happen above in the ArrowUp match arm
+        // Return None here instead of player_position
+        None
+    }
+}
+    
 // Create an impl block for Player
 // Add a new() function
 // This function should return Self
@@ -140,36 +182,6 @@ pub struct Player {
 // death_timer to Timer::new(200),
 // and key_reader KeyReader::new(),
 
-
-// move this function into a impl block for the Player struct
-// change this so it takes in &mut self instead of player_position
-// rename to use_key
-pub async fn on_press(mut player_position: Coords) -> Coords { // change to Option<Coords>
-    match KeyReader::await_key_press().await {
-        Key::ArrowLeft => {
-            player_position.0 -= 1; // change to self.current_position.0
-        }
-        Key::ArrowRight => {
-            player_position.0 += 1; // change to self.current_position.0
-        }
-        Key::ArrowUp => {
-            // ArrowUp is the key that makes the player shoot
-            // This function now returns an Option<Coords>
-            // Meaning if we return Some(Coords(x, y)) then the player shot a bullet from that position
-            // If we return None, the player did not shoot
-            // Here, the player shot, so let's return the player's current position
-            // Return Some(self.current_position.0)
-        }
-        Key::CtrlC => exit(0),
-        _ => {}
-    }
-    // When we change self.current_position.0 we directly change the position of the player
-    // We do not need to return the player_position anymore
-    // Instead we will return a set of coordinates, only when the player shoots
-    // That return will happen above in the ArrowUp match arm
-    // Return None here instead of player_position
-    player_position
-}
 
 // Created this new Timer struct, i'll explain it later
 pub struct Timer {
