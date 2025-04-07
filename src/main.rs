@@ -20,16 +20,6 @@ pub struct Cords(pub usize, pub usize);
 #[derive(Clone, Debug)]
 pub struct RelCords(pub i32, pub i32);
 
-
-
-// To run your program
-    // cargo run
-
-// When you finish tasks and your code compiles with no errors
-    // git add .
-    // git commit -m "why are you reading this?"
-    // git push
-
 #[tokio::main]
 async fn main()-> Result<(), String> { 
     execute!(std::io::stdout(), terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0, 0));
@@ -58,8 +48,8 @@ pub struct GameState {
 
 impl GameState {
     pub fn new() -> GameState {
-        let game_level = GameLevel::new(Level::Easy); // Fix: Add semi-colon. // Fix: Replace : with =
-        let (speed, lives) = game_level.level_status(); // Fix: Replace : with +
+        let game_level = GameLevel::new(Level::Easy);
+        let (speed, lives) = game_level.level_status();
         
         GameState {
             game_board: HashMap::new(),
@@ -104,7 +94,9 @@ impl GameState {
     }
 
     pub fn add_ship(&mut self, cords: Cords, ship: Ship) -> Result<(), String>  {
-        if let Some(_existing_ship) = self.remove_ship(cords) {
+        if cords.0 >= ROWS || cords.1 >= COLUMNS {
+            return Err(format!("Coordinates are out of bounds."));
+        } else if let Some(_existing_ship) = self.remove_ship(cords) {
             self.game_board.insert(cords, Ship::new_explosion());
         } else {
             self.game_board.insert(cords, ship);
@@ -114,7 +106,7 @@ impl GameState {
     }
    
 
-    pub fn remove_ship(&mut self, cords :Cords) -> Option<Ship> { // Fix: Give the Cords parameter a name (cords)
+    pub fn remove_ship(&mut self, cords :Cords) -> Option<Ship> { 
         self.game_board.remove(&cords)
     }
     
@@ -125,27 +117,35 @@ impl GameState {
     }
 
     pub fn ship_actions(&mut self)-> Result<(), String> {
-        let to_update: Vec<(Cords, Uuid)> = self // Fix: Replace Coords with Cords
+        let to_update: Vec<(Cords, Uuid)> = self
             .game_board
             .iter()
-            .map(|(coords, ship)| (*coords, ship.get_id()))
-            .collect::<Vec<(Cords, Uuid)>>(); // Fix: Replace Coords with Cords
+            .map(|(cords, ship)| (*cords, ship.get_id()))
+            .collect::<Vec<(Cords, Uuid)>>(); 
             
-        for (coords, ship_id) in to_update {          
-            if let Some(mut current_ship) = self.game_board.remove(&coords) {
-                match current_ship.get_action(coords, &mut self.game_board) {
-                    ShipAction::Nothing => {},
-                    ShipAction::Remove => {}, // Fix: Add comma here
+        for (cords, ship_id) in to_update {          
+            if let Some(mut current_ship) = self.game_board.remove(&cords) { // This line tries to remove a ship off the board at the given location (cords). The reason we remove the ship, is cause we want to move it. So if it can be removed, then we continue with the rest of this code block in order to move or shoot or whatever
+                if current_ship.get_id() != ship_id {
+                    continue;
+                } // If the ship that we removed, does not match the id of the ship we're trying to update, then we run continue, to skip the next block of code
+                
+                match current_ship.get_action(cords, &mut self.game_board) {
+                    ShipAction::Nothing => {
+                        // If we are not supposed to do anything, we need to add the ship back onto the board at the original coordinates
+                        // Run self.add_ship() and pass in the cords and current_ship variables. add_ship() returns a Result so make sure to add ? to the end of the line.
+                    },
+                    ShipAction::Remove => {},  // Remove does nothing since we've already removed the ship
                     ShipAction::Shoot => {
-                        let shoot_position = Cords(coords.0, coords.1 - 1); // Fix: change Coords() to Cords() (variable coords is fine)
-                        self.add_ship(shoot_position, Ship::new_bullet(true)); // Fix: current_ship is not a function, this should be add_ship()
-                    }, // Fix: Add comma here
-                    ShipAction::Move(new_coords, wrapped) => {
-                        //if wrapped || (wrapped && current_ship.wrap())
-                        panic!("julia cant build for crap");
-                    }, // Fix: Add comam here
+                        let shoot_position = Cords(cords.0, cords.1 - 1);
+                        self.add_ship(shoot_position, Ship::new_bullet(true));
+                    }, 
+                    ShipAction::Move(new_cords, wrapped) => {
+                       // Here we need to write the code to move the ship.
+                       // Create an if statement that checks if wrapped is false (!wrapped) or if wrapped is true and (&&) the result of current_ship.wrap() is true
+                       // Inside the if statement, run self.add_ship() and pass in the new_cords variable and current_ship variable. (add ? to the end of the line)
+                    }, 
                 }
-                return Ok(()); // Fix: Move this line below the match statement
+                return Ok(());  // We don't need to return Ok here since its then ext thing that runs outside the for loop (you can delete this line)
             }
         }
         Ok(())
@@ -153,7 +153,7 @@ impl GameState {
 
     pub async fn player_actions(&mut self) {
         if let Some(player_pos) = self.player.current_position {
-            if self.game_board.get(&player_pos).is_some() { // Fix: Add `if` keyword to the start of this line
+            if self.game_board.get(&player_pos).is_some() {
                 self.remove_ship(player_pos);
                 self.game_board.insert(player_pos, Ship::new_explosion());
                 if let Some(lives_left) = self.player.handle_collision() {
@@ -165,11 +165,8 @@ impl GameState {
             }
         }
 
-        
-
-        // We use this if statement to check if the player is not being displayed (implying it was exploded, and removed)
         if self.game_board.get(&self.player.start_position).is_none() {
-            self.player.respawn(true); // Fix: Pass true in to respawn() to let respawn know it can respawn the character. // Will improve this logic in the next iteration
+            self.player.respawn(true); 
         }
 
         if let Some(bullet_position) = self.player.use_key().await {
@@ -180,11 +177,11 @@ impl GameState {
 
     pub async fn start_game(&mut self) -> Result<(), String> {
         loop {
-            thread::sleep(Duration::from_millis(10)); // Fix: Add semi colon
+            thread::sleep(Duration::from_millis(10)); 
             self.display_board();
             self.tick_count += 1;
             self.ship_actions();
-            self.player_actions().await; // Fix: player is a field of self. Prefix player with `self.`
+            self.player_actions().await; 
         }
     }
 }
@@ -192,9 +189,9 @@ impl GameState {
 
 pub struct Player {
     pub display_char: char,
-    pub lives: u8, // Fix: Add comma
+    pub lives: u8,
     pub current_position: Option<Cords>, 
-    pub start_position: Cords, // Fix: Add comma
+    pub start_position: Cords, 
     pub death_timer: Timer, 
     pub key_reader: KeyReader,
 }
@@ -205,14 +202,14 @@ impl Player {
         Player {
             display_char: '^', 
             lives,
-            current_position: Some(start_position), // Fix: remove space after current_ // Fix: Add comma
-            start_position: start_position, // Fix: Add comma
+            current_position: Some(start_position), 
+            start_position: start_position,
             death_timer: Timer::new(200),
             key_reader: KeyReader::new(),
         }
     }
 
-    pub async fn use_key(&mut self) -> Option<Cords> { // Fix: Change Option<Coords> to Option<Cords>
+    pub async fn use_key(&mut self) -> Option<Cords> { 
         if let Some(Cords(x, y)) = self.current_position {
             match self.key_reader.read_key().await {
                 Some(Key::ArrowLeft) => {
@@ -288,82 +285,77 @@ pub enum Ship {
 impl Ship{
     pub fn display_char(&self)-> char{
         match self {
-            // Enum variants require the (_, _, _) even when not using them
-            Ship::Fly(_, _, _)=> 'F', // Fix: Change to Ship::Fly(_, _, _)
-            Ship::Explosion(_, _, _)=> '*',  // Fix: Change to Ship::Explosion(_, _, _)
-            Ship::Bullet(_, _, _)=> '|',  // Fix: Change to Ship::Bullet(_, _, _)
+            Ship::Fly(_, _, _)=> 'F', 
+            Ship::Explosion(_, _, _)=> '*',
+            Ship::Bullet(_, _, _)=> '|',  
         }
     }
 
     pub fn get_id(&self)-> Uuid {
-        // Match statements return references to the value. We want the value, not a reference
         match self {
-            Ship::Fly(_, _, uuid) => *uuid, // Fix: Prefix with * to dereference. '=> *uuid'
-            Ship::Explosion(_, _, uuid) => *uuid, // Fix: Change to '=> *uuid'
-            Ship::Bullet(_, _, uuid) => *uuid, // Fix: Change to '=> *uuid'
+            Ship::Fly(_, _, uuid) => *uuid,
+            Ship::Explosion(_, _, uuid) => *uuid, 
+            Ship::Bullet(_, _, uuid) => *uuid, 
         }
     }
 
     pub fn get_action(&mut self, cords: Cords, hashbrowns: &mut HashMap<Cords, Ship>)-> ShipAction {
-        // This match statement returns ai, but isn't storing the value anywhere
         let ai = match self {
-            Ship::Fly(ai, _, _) => ai, // Fix: Change to '=> *ai'
-            Ship::Explosion(ai, _, _) => ai, // Fix: Change to '=> *ai'
-            Ship::Bullet(ai, _, _) => ai, // Fix: Change to '=> *ai'
+            Ship::Fly(ai, _, _) => ai,
+            Ship::Explosion(ai, _, _) => ai,
+            Ship::Bullet(ai, _, _) => ai,
         };
-        // We try to use ai here, but we didn't store the value anywhere.
-        // Can you solve this?
         ai.get_action(cords, hashbrowns)
     }
 
     pub fn wrap(&self) -> bool {
         match self {
-            Ship::Fly(_, fool, _) => *fool, // Fix: Change to '=> *fool'
-            Ship::Explosion(_, fool, _) => *fool, // etc
-            Ship::Bullet(_, fool, _) => *fool, // etc
+            Ship::Fly(_, fool, _) => *fool, 
+            Ship::Explosion(_, fool, _) => *fool, 
+            Ship::Bullet(_, fool, _) => *fool, 
         }
     }
 
     pub fn new_fly()->Self {
         Self::Fly( 
-            ShipAI::new(
-                100,
+            ShipAI::new( // This code is correct. Here's a couple notes to explain it better.
+                100, // This number represents how often to run an action
                 vec![
-                    (None, AIAction::MoveOrNothing(RelCords(1, 0))),                         
-                    (None, AIAction::MoveOrNothing(RelCords(0, -1))), 
-                    (None, AIAction::MoveOrNothing(RelCords(-1, 0))), 
-                    (Some(Condition::DontShootIfShipsAreBelow(RelCords(1, 0))), AIAction::Shoot),
-                ],
+                    (None, AIAction::MoveOrNothing(RelCords(1, 0))),   // First action is to move up                      
+                    (None, AIAction::MoveOrNothing(RelCords(0, -1))), // Then move right
+                    (None, AIAction::MoveOrNothing(RelCords(-1, 0))), // Then move down
+                    (Some(Condition::DontShootIfShipsAreBelow(RelCords(1, 0))), AIAction::Shoot), // Then shoot
+                ], // The ShipAI causes this actions to repeat in a loop
             ),
-            true,
-            Uuid::new_v4(),
+            true, // Wrap is set to true, if the fly moves into the side of the board, it will appear on the opposite side
+            Uuid::new_v4(), // Creates a new random id number
         )
     }
 
     pub fn new_bullet(moving_down: bool)->Self{
-        let movement = if moving_down { // Fix: replace : with =
+        let movement = if moving_down { 
             RelCords(1, 0)
         } else {
             RelCords(-1, 0)
-        }; // Fix: This is a let statement, add a semi-colon here
+        }; 
         Self::Bullet(
             ShipAI::new(
-                10, 
-                vec![(None, AIAction::RelativeMove(movement))],
+                10, // Time that needs to pass before moving the bullet down or up a square
+                vec![(None, AIAction::RelativeMove(movement))], // Move the bullet, movent is a variable that either tells it to move up or down depending if a fly or the player shot the bullet
             ), 
-            false, 
-            Uuid::new_v4(),
+            false, // Wrap is set to false, the bullet will not appear on the opposite side
+            Uuid::new_v4(), // Creates ID number
         )
     }
 
     pub fn new_explosion()-> Self {
         Self::Explosion(
             ShipAI::new(
-                10, 
-                vec![(None, AIAction::Remove)],
+                10, // Time between actions
+                vec![(None, AIAction::Remove)], // We simply remove the explosion after one frame of it existing
             ), 
-            false, 
-            Uuid::new_v4(),
+            false, // No wrapping
+            Uuid::new_v4(), // Creates ID number
         )
     }
 }
@@ -377,13 +369,13 @@ pub struct ShipAI {
 impl ShipAI {
     pub fn new(action_interval: u64, actions: Vec<(Option<Condition>, AIAction)>) -> Self {
         ShipAI{
-            timer: Timer::new(action_interval), // Fix: Surround these three fields in: ShipAI {}
+            timer: Timer::new(action_interval), 
             actions: actions,
             action_index: 0,
         }
     }
 
-    pub fn get_ai_action(&mut self, cords: Cords, game_board: &HashMap<Cords, Ship>)-> AIAction { // Return type has typo (AIAction)
+    pub fn get_ai_action(&mut self, cords: Cords, game_board: &HashMap<Cords, Ship>) -> AIAction { 
         if self.actions.is_empty() {
             return AIAction::Nothing; 
         }
@@ -407,6 +399,7 @@ impl ShipAI {
         }
         AIAction::Nothing
     }
+
     pub fn next_action(&mut self) {
         if self.action_index == self.actions.len() - 1 {
             self.action_index = 0;
@@ -415,7 +408,7 @@ impl ShipAI {
         }
     }
 
-    pub fn get_action(&mut self, cords: Cords, game_board: &HashMap<Cords, Ship>)-> ShipAction {
+    pub fn get_action(&mut self, cords: Cords, game_board: &HashMap<Cords, Ship>) -> ShipAction {
         self.get_ai_action(cords, game_board).to_ship_action(cords, game_board)
     }
 }
@@ -477,9 +470,8 @@ impl AIAction{
             AIAction::Shoot => {
                 return ShipAction::Shoot;
             },
-            // We want to use the cords that AIAction::Move provides us with.
-            AIAction::Move(move_cords) => { // Fix: Change to AIAction::Move(move_cords)
-                return ShipAction::Move(move_cords, false); // Fix: Use move_cords, not cords, here
+            AIAction::Move(move_cords) => { 
+                return ShipAction::Move(move_cords, false); 
             },
 
             AIAction::MoveOrNothing(rel_cords) => {
@@ -494,13 +486,13 @@ impl AIAction{
             }
 
             AIAction::RelativeMove(rel_cords) => {
-                let (new_cords, wrap) = rel_cords.evaluate(cords); // Fix: Add semi-colon here
+                let (new_cords, wrap) = rel_cords.evaluate(cords);
                 ShipAction::Move(new_cords, wrap)
             }
 
             AIAction::ShootOrNothing => {
                 let condition = Condition::DontShootIfShipsAreBelow(RelCords(1, 0));
-                match condition.evaluate(cords, game_board) { // Fix: This part of a match statement doesn't use the =>. Remove it.
+                match condition.evaluate(cords, game_board) { 
                     true => ShipAction::Shoot,
                     false => ShipAction::Nothing,
                 }
