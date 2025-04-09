@@ -131,6 +131,7 @@ impl GameState {
                 
                 match current_ship.get_action(cords, &mut self.game_board) {
                     ShipAction::Nothing => {
+                        self.add_ship(cords, current_ship)?
                         // If we are not supposed to do anything, we need to add the ship back onto the board at the original coordinates
                         // Run self.add_ship() and pass in the cords and current_ship variables. add_ship() returns a Result so make sure to add ? to the end of the line.
                     },
@@ -140,12 +141,15 @@ impl GameState {
                         self.add_ship(shoot_position, Ship::new_bullet(true));
                     }, 
                     ShipAction::Move(new_cords, wrapped) => {
-                       // Here we need to write the code to move the ship.
+                       // Here we need to write the code to move the ship. 
+                       if !wrapped || wrapped && current_ship.wrap() {
+                        self.add_ship(new_cords, current_ship)?
+                       }
                        // Create an if statement that checks if wrapped is false (!wrapped) or if wrapped is true and (&&) the result of current_ship.wrap() is true
                        // Inside the if statement, run self.add_ship() and pass in the new_cords variable and current_ship variable. (add ? to the end of the line)
                     }, 
                 }
-                return Ok(());  // We don't need to return Ok here since its then ext thing that runs outside the for loop (you can delete this line)
+                  // We don't need to return Ok here since its then next thing that runs outside the for loop (you can delete this line)
             }
         }
         Ok(())
@@ -325,7 +329,7 @@ impl Ship{
                     (None, AIAction::MoveOrNothing(RelCords(0, -1))), // Then move right
                     (None, AIAction::MoveOrNothing(RelCords(-1, 0))), // Then move down
                     (Some(Condition::DontShootIfShipsAreBelow(RelCords(1, 0))), AIAction::Shoot), // Then shoot
-                ], // The ShipAI causes this actions to repeat in a loop
+                ], // The ShipAI causes these actions to repeat in a loop
             ),
             true, // Wrap is set to true, if the fly moves into the side of the board, it will appear on the opposite side
             Uuid::new_v4(), // Creates a new random id number
@@ -341,7 +345,7 @@ impl Ship{
         Self::Bullet(
             ShipAI::new(
                 10, // Time that needs to pass before moving the bullet down or up a square
-                vec![(None, AIAction::RelativeMove(movement))], // Move the bullet, movent is a variable that either tells it to move up or down depending if a fly or the player shot the bullet
+                vec![(None, AIAction::RelativeMove(movement))], // Move the bullet, movement is a variable that either tells it to move up or down depending if a fly or the player shot the bullet
             ), 
             false, // Wrap is set to false, the bullet will not appear on the opposite side
             Uuid::new_v4(), // Creates ID number
@@ -466,7 +470,6 @@ impl AIAction{
             AIAction::Remove => {
                 return ShipAction::Remove;
             },
-
             AIAction::Shoot => {
                 return ShipAction::Shoot;
             },
